@@ -89,6 +89,20 @@ gcloud compute instances list --sort-by=ZONE
 
 Código = 1bd6 0147 9833 bb93
 
-student-02-10931f802865@qwiklabs.net
-RN623rQyhp
-qwiklabs-gcp-01-b38914b0974c
+    * Crear una maquina virtual por GUI una n1-standard-2
+    * Instalar Apache y php7.0 en linux
+
+//// Instalar el monitoring dentro de la VM ////
+
+    **** AGENTE DE SUPERVISION EN LA NUBE ****
+    - curl -sSO https://dl.google.com/cloudagents/add-monitoring-agent-repo.sh 
+    - sudo bash add-monitoring-agent-repo.sh
+    - sudo apt-get update
+    - sudo apt-get install stackdriver-agent
+
+    **** CLOUD LOGGING ****
+    - curl -sSO https://dl.google.com/cloudagents/add-logging-agent-repo.sh
+    - sudo bash add-logging-agent-repo.sh
+    - sudo apt-get install google-fluentd
+
+se creo un uptime check con alerta al correo electronico y luego el dashboard
