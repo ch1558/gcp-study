@@ -134,12 +134,6 @@ gcloud compute instances list --sort-by=ZONE
 
 Código = 1bd6 0147 9833 bb93
 
-<<<<<<< HEAD
-student-02-10931f802865@qwiklabs.net
-RN623rQyhp
-qwiklabs-gcp-01-b38914b0974c
-
-=======
     * Crear una maquina virtual por GUI una n1-standard-2
     * Instalar Apache y php7.0 en linux
 
@@ -157,4 +151,3 @@ qwiklabs-gcp-01-b38914b0974c
     - sudo apt-get install google-fluentd
 
 se creo un uptime check con alerta al correo electronico y luego el dashboard
->>>>>>> c7b054aa11bf2dffa99005ac0731b134f5ceb3d7
