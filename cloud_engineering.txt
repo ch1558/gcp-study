@@ -1,14 +1,59 @@
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-CHALLENGE 
+CHALLENGE
+    Código: ba3a e035 3f08 49a0
 
     1) Task 1: Create development VPC manually
+
+        gcloud compute networks create griffin-dev-vpc --subnet-mode=custom
+
+        gcloud compute networks subnets create griffin-dev-wp --network=griffin-dev-vpc --range=192.168.16.0/20
+        gcloud compute networks subnets create griffin-dev-mgmt --network=griffin-dev-vpc --range=192.168.32.0/20
+
     2) Task 2: Create production VPC manually
+
+        gcloud compute networks create griffin-prod-vpc --subnet-mode=custom
+
+        gcloud compute networks subnets create griffin-prod-wp --network=griffin-prod-vpc --range=192.168.48.0/20
+        gcloud compute networks subnets create griffin-prod-mgmt --network=griffin-prod-vpc --range=192.168.64.0/20
+
     3) Task 3: Create bastion host
+
+        Creación de una VM via GUI, configurando ambas networks.
+        Configurate firewall para esa net VPC NETWORK >> FIREWALL
+
     4) Task 4: Create and configure Cloud SQL Instance
+
+        Crear un SQL por gui y luego en cloud sheel ejecutar
+        umj6LG5HMuqjbqqk
+
+            gcloud sql connect griffin-dev-db --user=root --quiet
+
+            CREATE DATABASE wordpress;
+            GRANT ALL PRIVILEGES ON wordpress.* TO "wp_user"@"%" IDENTIFIED BY "stormwind_rules";
+            FLUSH PRIVILEGES;
+
+
     5) Task 5: Create Kubernetes cluster
+
+        Via GUI
+
     6) Task 6: Prepare the Kubernetes cluster
+
+        gsutil cp -r gs://cloud-training/gsp321/wp-k8s ~/
+        cd ~/wp-k8s
+        edit wp-env.yaml
+
+        //// Conectar el cluster ////
+        gcloud container clusters get-credentials griffin-dev --zone us-east1-b --project qwiklabs-gcp-00-d85bf56ac3b1
+
+        kubectl apply -f wp-env.yaml
+
+        gcloud iam service-accounts keys create key.json \
+        --iam-account=cloud-sql-proxy@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com kubectl create secret generic cloudsql-instance-credentials \
+        --from-file key.json
+
     7) Task 7: Create a WordPress deployment
     8) Task 8: Enable monitoring in WordPress
     9) Task 9: Provide access for an additional engineer
@@ -92,3 +137,4 @@ Código = 1bd6 0147 9833 bb93
 student-02-10931f802865@qwiklabs.net
 RN623rQyhp
 qwiklabs-gcp-01-b38914b0974c
+
