@@ -37,7 +37,7 @@ CHALLENGE
 
     5) Task 5: Create Kubernetes cluster
 
-        Via GUI
+        Via
 
     6) Task 6: Prepare the Kubernetes cluster
 
