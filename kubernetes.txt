@@ -28,7 +28,6 @@ docker images
                     Kubernetes Engine: Qwik Start
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
 //// Set a default compute zone ////
 gcloud config set compute/zone us-central1-a   
 
@@ -49,7 +48,185 @@ gcloud container clusters delete [CLUSTER-NAME]
                 Orchestrating the Cloud with Kubernetes
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+Código = 7a41 7391 2de5 d1cd
 
+//// Set a default compute zone ////
+
+    gcloud config set compute/zone us-central1-b
+
+// Crea unos cluster con una imagen
+
+    gcloud container clusters create io
+
+// Copia de repo de git
+
+    gsutil cp -r gs://spls/gsp021/* .
+    cd orchestrate-with-kubernetes/kubernetes
+
+// Deploy and expose de kubernetes
+
+    kubectl create deployment nginx --image=nginx:1.10.0
+    kubectl get pods
+    kubectl expose deployment
+    kubectl get services
+
+// REVISION DE PODS
+
+    cat pods/monolith.yaml
+    kubectl create -f pods/monolith.yaml
+
+    kubectl describe pods monolith
+
+// REDIRIGIR EL FLUJO 
+    kubectl port-forward monolith 10080:80
+    curl -u user http://127.0.0.1:10080/login
+    TOKEN=$(curl http://127.0.0.1:10080/login -u user|jq -r '.token')
+
+// ENTRAR A UN POD POR BASH
+    kubectl exec monolith --stdin --tty -c monolith /bin/sh
+
+// MANEJO DE SERVICIOS
+    cd ~/orchestrate-with-kubernetes/kubernetes
+    cat pods/secure-monolith.yaml
+
+    kubectl create secret generic tls-certs --from-file tls/
+    kubectl create configmap nginx-proxy-conf --from-file nginx/proxy.conf
+    kubectl create -f pods/secure-monolith.yaml
+
+// CREAR UY EXPONER EL SERVICIO 
+
+    kubectl create -f services/monolith.yaml
+
+// firewall para permitir el flujo 
+    gcloud compute firewall-rules create allow-monolith-nodeport --allow=tcp:31000
+
+// VER PODS DEL SERVICIO 
+
+    kubectl get pods -l "app=monolith"
+    kubectl get pods -l "app=monolith,secure=enabled"
+
+    kubectl label pods secure-monolith 'secure=enabled'
+    kubectl get pods secure-monolith --show-labels
+
+    kubectl describe services monolith | grep Endpoints
+
+// CREACION DE PODS PARA SERVICE AUTH Y hello
+
+    kubectl create -f deployments/auth.yaml
+    kubectl create -f services/auth.yaml
+
+    kubectl create -f deployments/hello.yaml
+    kubectl create -f services/hello.yaml
+
+// CREAR CONFIG MAP Y SERVICE FRONTEND
+
+    kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf
+    kubectl create -f deployments/frontend.yaml
+    kubectl create -f services/frontend.yaml
+
+    kubectl get services frontend
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            Managing Deployments Using Kubernetes Engine
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Código= 00fb 28f3 c90f 8c9b
+
+    gcloud config set compute/zone us-central1-a
+
+    gsutil -m cp -r gs://spls/gsp053/orchestrate-with-kubernetes .
+    cd orchestrate-with-kubernetes/kubernetes
+
+    gcloud container clusters create bootcamp --num-nodes 5 --scopes "https://www.googleapis.com/auth/projecthosting,storage-rw"
+    
+    kubectl create -f deployments/auth.yaml
+    kubectl create -f services/auth.yaml
+
+    kubectl create -f deployments/hello.yaml
+    kubectl create -f services/hello.yaml
+
+    kubectl create secret generic tls-certs --from-file tls/
+    kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf
+    kubectl create -f deployments/frontend.yaml
+    kubectl create -f services/frontend.yaml
+
+// CAMBIAR NUMERO DE REPLCIAS DEL POD
+    kubectl scale deployment hello --replicas=5
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+          Continuous Delivery with Jenkins in Kubernetes Engine
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Código = 883a f322 e30a aac7
+
+//// Clonar el repositorio
+    gcloud config set compute/zone us-east1-d
+    git clone https://github.com/GoogleCloudPlatform/continuous-deployment-on-kubernetes.git
+    cd continuous-deployment-on-kubernetes
+
+//// Crear el cluster
+    gcloud container clusters create jenkins-cd \
+        --num-nodes 2 \
+        --machine-type n1-standard-2 \
+        --scopes "https://www.googleapis.com/auth/source.read_write,cloud-platform"
+
+    gcloud container clusters list
+    gcloud container clusters get-credentials jenkins-cd
+    kubectl cluster-info
+
+//// HELM AL repo, es un manejador de chart grafico
+    helm repo add jenkins https://charts.jenkins.io
+    helm repo update
+
+    helm install cd jenkins/jenkins -f jenkins/values.yaml --version 1.2.2 --wait
+
+//// Comnprobar el POD Y OBTENER AUTORIZACION Jenkins
+    kubectl get pods
+    kubectl create clusterrolebinding jenkins-deploy --clusterrole=cluster-admin --serviceaccount=default:cd-jenkins
+
+//  CONFIGURAR LA REDIRECCION DEL POD AL PUERTO DE JENKINS UI
+    export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/component=jenkins-master" -l "app.kubernetes.io/instance=cd" -o jsonpath="{.items[0].metadata.name}")
+    kubectl port-forward $POD_NAME 8080:8080 >> /dev/null &
+
+//// Verificar los servicios hayan sido creados
+    kubectl get svc
+
+//// EJECTURAR UNA app
+    cd sample-app
+    kubectl create ns production
+    kubectl apply -f k8s/production -n production
+    kubectl apply -f k8s/canary -n production
+    kubectl apply -f k8s/services -n production
+
+//// AUMENTAR EL NUMERO DE REPLICAS DE LA APLICACION
+
+    kubectl scale deployment gceme-frontend-production -n production --replicas 4
+    kubectl get pods -n production -l app=gceme -l role=frontend
+    kubectl get pods -n production -l app=gceme -l role=backend
+    kubectl get service gceme-frontend -n production
+
+//// ALMACENAR IP EN VARIABLES
+
+    export FRONTEND_SERVICE_IP=$(kubectl get -o jsonpath="{.status.loadBalancer.ingress[0].ip}" --namespace=production services gceme-frontend)
+    curl http://$FRONTEND_SERVICE_IP/version
+
+//// REPOSITORIO DE GCLOUD PA CI-CD
+    gcloud source repos create default
+
+//// VINCULACION CON git
+
+    git init
+    git config credential.helper gcloud.sh
+    git remote add origin https://source.developers.google.com/p/$DEVSHELL_PROJECT_ID/r/default
+
+    git config --global user.email "[EMAIL_ADDRESS]"
+    git config --global user.name "[USERNAME]"
+
+    
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
